@@ -3,7 +3,7 @@ import React from 'react';
 import {useGetAllRecipesQuery} from '../redux/api/apiSlice';
 import Loading from '../common/loading';
 const ProductDetails = ({route, navigation}) => {
-  const {isError, isLoading, isSuccess, data} = useGetAllRecipesQuery();
+  const {isLoading, isSuccess, data} = useGetAllRecipesQuery();
   const {id} = route.params;
 
   return (
