@@ -9,17 +9,18 @@ const ProductDetails = ({route, navigation}) => {
   return (
     <View style={styles.container}>
       {isLoading && <Loading />}
-      <ScrollView>
+      <ScrollView showsVerticalScrollIndicator={false}>
         {isSuccess &&
           data?.results?.map(item => {
             const targetRecipe =
               item.id === id ? (
                 <View style={styles.subContainer}>
+                  <Text style={styles.text}>{item.name}</Text>
                   <Image
                     source={{uri: item.thumbnail_url}}
                     style={styles.image}
                   />
-                  <Text style={styles.text}>{item.name}</Text>
+
                   <Text style={styles.description}>{item.description}</Text>
                   {item?.nutrition?.calories && (
                     <View style={styles.nutrition}>
@@ -85,9 +86,10 @@ export default ProductDetails;
 
 const styles = StyleSheet.create({
   image: {
-    width: '95%',
+    width: '100%',
     height: 150,
     borderRadius: 15,
+    marginBottom: 10,
   },
   container: {
     flex: 1,
@@ -96,8 +98,6 @@ const styles = StyleSheet.create({
   },
   subContainer: {
     width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
     padding: 10,
   },
   text: {
@@ -105,6 +105,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     padding: 10,
     color: 'green',
+    textAlign: 'center',
   },
   recipeText: {
     alignItems: 'center',
@@ -119,19 +120,21 @@ const styles = StyleSheet.create({
     color: 'gray',
   },
   nutrition: {
-    padding: 10,
+    paddingTop: 10,
   },
   nutritionText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: 'orange',
+
     padding: 3,
   },
-  ingredient: {},
+  ingredient: {
+    paddingTop: 10,
+  },
   ingredientText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: 'orange',
+
     padding: 4,
   },
 });

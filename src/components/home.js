@@ -7,14 +7,16 @@ import {
   Center,
   Box,
   CheckIcon,
+  VStack,
 } from 'native-base';
 import SplashScreen from 'react-native-splash-screen';
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useCallback} from 'react';
 import Loading from '../common/loading';
 import {StyleSheet} from 'react-native';
 import {useGetAllRecipesQuery} from '../redux/api/apiSlice';
 import {Select} from 'native-base';
-
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import {convertAbsoluteToRem} from 'native-base/lib/typescript/theme/tools';
 const ViewApp = ({
   isSuccess,
   data,
@@ -22,13 +24,119 @@ const ViewApp = ({
   searchData,
   service,
   vertical,
+  food,
 }) => {
+  console.log('hii', food);
   return (
     isSuccess &&
-    data?.results
+    food?.results?.map(item => {
+      return vertical ? (
+        <VStack
+          alignItems={'center'}
+          margin={2}
+          space={1}
+          padding={5}
+          rounded={15}
+          borderColor="orange.300"
+          borderWidth={1}
+          style={vertical ? styles.subContainer : styles.subContainerhorizontal}
+          key={item.id}>
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate('ProductDetails', {id: item.id})
+            }>
+            <Image source={{uri: item.thumbnail_url}} style={styles.image} />
+            <Text style={styles.text}>{item.name}</Text>
+          </TouchableOpacity>
+        </VStack>
+      ) : (
+        <VStack
+          alignItems={'center'}
+          margin={2}
+          space={1}
+          padding={5}
+          rounded={15}
+          borderColor="orange.300"
+          borderWidth={1}
+          style={styles.subContainerhorizontal}
+          key={item.id}>
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate('ProductDetails', {id: item.id})
+            }>
+            <Image
+              source={{uri: item.thumbnail_url}}
+              style={styles.imagehorizontal}
+            />
+            <Text style={styles.horizontalText}>{item.name}</Text>
+          </TouchableOpacity>
+        </VStack>
+      );
+    })
+  );
+};
+
+const VerticalView = ({
+  isSuccess,
+  data,
+  navigation,
+  searchData,
+  service,
+  vertical,
+  food,
+}) => {
+  return (
+    <ScrollView showsVerticalScrollIndicator={false}>
+      <ViewApp
+        isSuccess={isSuccess}
+        data={data}
+        navigation={navigation}
+        searchData={searchData}
+        service={service}
+        vertical={vertical}
+        food={food}
+      />
+    </ScrollView>
+  );
+};
+const HorizontalView = ({
+  isSuccess,
+  data,
+  navigation,
+  searchData,
+  service,
+  vertical,
+  food,
+}) => {
+  return (
+    <ViewApp
+      isSuccess={isSuccess}
+      data={data}
+      navigation={navigation}
+      searchData={searchData}
+      service={service}
+      vertical={vertical}
+      food={food}
+    />
+  );
+};
+const SearchBar = ({setSearchData, searchData, data, service, setFood}) => {
+  const debouncing = func => {
+    let timer;
+    return function (...args) {
+      const context = this;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        timer = null;
+        func.apply(context, args);
+      }, 1000);
+    };
+  };
+  const handleChange = val => {
+    const recipee = data?.results
       ?.filter(item => {
-        if (searchData) {
-          return item.name.toLowerCase().includes(searchData.toLowerCase());
+        if (val) {
+          return item.name.toLowerCase().includes(val.toLowerCase());
         } else {
           return item;
         }
@@ -45,73 +153,10 @@ const ViewApp = ({
         } else if (service === 'Date') {
           return getDate(b.created_at) - getDate(a.created_at);
         }
-      })
-      .map(item => {
-        return (
-          <TouchableOpacity
-            style={
-              vertical ? styles.subContainer : styles.subContainerhorizontal
-            }
-            key={item.id}
-            onPress={() =>
-              navigation.navigate('ProductDetails', {id: item.id})
-            }>
-            <Image
-              source={{uri: item.thumbnail_url}}
-              style={vertical ? styles.image : styles.imagehorizontal}
-            />
-            <Text style={styles.text}>{item.name}</Text>
-          </TouchableOpacity>
-        );
-      })
-  );
-};
-
-const VerticalView = ({
-  isSuccess,
-  data,
-  navigation,
-  searchData,
-  service,
-  vertical,
-}) => {
-  return (
-    <ScrollView showsVerticalScrollIndicator={false}>
-      <ViewApp
-        isSuccess={isSuccess}
-        data={data}
-        navigation={navigation}
-        searchData={searchData}
-        service={service}
-        vertical={vertical}
-      />
-    </ScrollView>
-  );
-};
-const HorizontalView = ({
-  isSuccess,
-  data,
-  navigation,
-  searchData,
-  service,
-  vertical,
-}) => {
-  return (
-    <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
-      <HStack>
-        <ViewApp
-          isSuccess={isSuccess}
-          data={data}
-          navigation={navigation}
-          searchData={searchData}
-          service={service}
-          vertical={vertical}
-        />
-      </HStack>
-    </ScrollView>
-  );
-};
-const SearchBar = ({setSearchData}) => {
+      });
+    setFood(recipee);
+  };
+  const optimisedVersion = useCallback(debouncing(handleChange), []);
   return (
     <Input
       mx="3"
@@ -120,7 +165,7 @@ const SearchBar = ({setSearchData}) => {
       w="95%"
       margin={5}
       placeholderTextColor="green.500"
-      onChangeText={val => setSearchData(val)}
+      onChangeText={val => optimisedVersion(val)}
     />
   );
 };
@@ -135,17 +180,21 @@ const SelectView = ({setService, service}) => {
       <Box maxW="300">
         <Select
           selectedValue={service}
-          minWidth="100"
+          minWidth="150"
           accessibilityLabel="Choose Service"
-          placeholder="Choose Order"
+          placeholderTextColor={'green.700'}
+          fontSize={17}
+          placeholder="Filter"
           _selectedItem={{
             bg: 'teal.600',
             endIcon: <CheckIcon size="5" />,
           }}
           mt={1}
           onValueChange={itemValue => setService(itemValue)}>
-          {data.map(item => {
-            return <Select.Item label={item.label} value={item.value} />;
+          {data.map((item, index) => {
+            return (
+              <Select.Item key={index} label={item.label} value={item.value} />
+            );
           })}
         </Select>
       </Box>
@@ -158,53 +207,72 @@ const Home = ({navigation}) => {
   const [vertical, setVertical] = useState(true);
   const [horizontal, setHorizontal] = useState(false);
   const [service, setService] = useState('');
-
+  const [food, setFood] = useState([]);
   useEffect(() => {
     SplashScreen.hide();
-  }, []);
-
+    setFood(() => data);
+  }, [food]);
+  console.log('food in home', food);
   return (
     <SafeAreaView style={styles.SafeAreaView}>
       {isLoading && <Loading />}
       {isSuccess && (
         <View style={styles.container}>
-          <SearchBar setSearchData={setSearchData} />
-          <SelectView setService={setService} service={service} />
-          <HStack padding={2}>
-            <Button
-              onPress={() => {
-                setVertical(true), setHorizontal(false);
-              }}>
-              <Text style={styles.view}>Vertical</Text>
-            </Button>
-            <Button
-              marginLeft={3}
-              onPress={() => {
-                setHorizontal(true), setVertical(false);
-              }}>
-              <Text style={styles.view}>Horizontal</Text>
-            </Button>
+          <SearchBar
+            setSearchData={setSearchData}
+            setFood={setFood}
+            data={data}
+            service={service}
+          />
+          <HStack
+            alignItems={'center'}
+            justifyContent={'space-between'}
+            width={'100%'}
+            paddingLeft={5}
+            paddingRight={5}
+            paddingBottom={5}>
+            <View style={styles.fonticons}>
+              <TouchableOpacity
+                onPress={() => {
+                  setVertical(true), setHorizontal(false);
+                }}>
+                <FontAwesome5 name="grip-lines" size={25} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setHorizontal(true), setVertical(false);
+                }}>
+                <FontAwesome5 name="th-large" size={25} />
+              </TouchableOpacity>
+            </View>
+            <SelectView setService={setService} service={service} />
           </HStack>
-          {vertical ? (
-            <VerticalView
-              isSuccess={isSuccess}
-              data={data}
-              navigation={navigation}
-              searchData={searchData}
-              service={service}
-              vertical={vertical}
-            />
-          ) : null}
-          {horizontal ? (
-            <HorizontalView
-              isSuccess={isSuccess}
-              data={data}
-              navigation={navigation}
-              searchData={searchData}
-              service={service}
-              vertical={vertical}
-            />
-          ) : null}
+          <ScrollView>
+            {vertical ? (
+              <VerticalView
+                isSuccess={isSuccess}
+                data={data}
+                navigation={navigation}
+                searchData={searchData}
+                service={service}
+                vertical={vertical}
+                food={food}
+              />
+            ) : null}
+            {horizontal ? (
+              <HStack flexWrap={'wrap'}>
+                <HorizontalView
+                  isSuccess={isSuccess}
+                  data={data}
+                  navigation={navigation}
+                  searchData={searchData}
+                  service={service}
+                  vertical={vertical}
+                  food={food}
+                />
+              </HStack>
+            ) : null}
+          </ScrollView>
         </View>
       )}
     </SafeAreaView>
@@ -223,14 +291,25 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   image: {
-    width: '95%',
-    height: 150,
+    width: 300,
+    height: 170,
     borderRadius: 15,
   },
   imagehorizontal: {
-    width: '100%',
-    height: 300,
+    width: 150,
+    height: 150,
     borderRadius: 15,
+  },
+  horizontalText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    padding: 10,
+    color: 'green',
+  },
+  fonticons: {
+    width: '20%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   searchBar: {
     fontSize: 16,
@@ -243,9 +322,10 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
   },
   subContainer: {
-    width: '100%',
+    width: '95%',
     alignItems: 'center',
     justifyContent: 'center',
     paddingBottom: 15,
@@ -255,6 +335,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingBottom: 15,
+    width: '45%',
   },
   text: {
     fontSize: 17,
