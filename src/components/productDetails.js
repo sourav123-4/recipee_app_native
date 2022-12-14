@@ -2,6 +2,7 @@ import {View, Text, ScrollView, StyleSheet, Image} from 'react-native';
 import React from 'react';
 import {useGetAllRecipesQuery} from '../redux/api/apiSlice';
 import Loading from '../common/loading';
+
 const ProductDetails = ({route, navigation}) => {
   const {isLoading, isSuccess, data} = useGetAllRecipesQuery();
   const {id} = route.params;
@@ -20,7 +21,7 @@ const ProductDetails = ({route, navigation}) => {
                     source={{uri: item.thumbnail_url}}
                     style={styles.image}
                   />
-
+                  <Text style={styles.descriptionHeader}>Description:</Text>
                   <Text style={styles.description}>{item.description}</Text>
                   {item?.nutrition?.calories && (
                     <View style={styles.nutrition}>
@@ -113,6 +114,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '900',
     color: 'blue',
+  },
+  descriptionHeader: {
+    color: 'green',
+    fontSize: 20,
+    fontWeight: '900',
   },
   description: {
     fontSize: 14,

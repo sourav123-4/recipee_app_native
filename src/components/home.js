@@ -17,6 +17,7 @@ import {useGetAllRecipesQuery} from '../redux/api/apiSlice';
 import {Select} from 'native-base';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import {convertAbsoluteToRem} from 'native-base/lib/typescript/theme/tools';
+import axios from 'axios';
 const ViewApp = ({
   isSuccess,
   data,
@@ -26,53 +27,75 @@ const ViewApp = ({
   vertical,
   food,
 }) => {
-  console.log('hii', food);
   return (
     isSuccess &&
-    food?.results?.map(item => {
-      return vertical ? (
-        <VStack
-          alignItems={'center'}
-          margin={2}
-          space={1}
-          padding={5}
-          rounded={15}
-          borderColor="orange.300"
-          borderWidth={1}
-          style={vertical ? styles.subContainer : styles.subContainerhorizontal}
-          key={item.id}>
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate('ProductDetails', {id: item.id})
-            }>
-            <Image source={{uri: item.thumbnail_url}} style={styles.image} />
-            <Text style={styles.text}>{item.name}</Text>
-          </TouchableOpacity>
-        </VStack>
-      ) : (
-        <VStack
-          alignItems={'center'}
-          margin={2}
-          space={1}
-          padding={5}
-          rounded={15}
-          borderColor="orange.300"
-          borderWidth={1}
-          style={styles.subContainerhorizontal}
-          key={item.id}>
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate('ProductDetails', {id: item.id})
-            }>
-            <Image
-              source={{uri: item.thumbnail_url}}
-              style={styles.imagehorizontal}
-            />
-            <Text style={styles.horizontalText}>{item.name}</Text>
-          </TouchableOpacity>
-        </VStack>
-      );
-    })
+    data?.results
+      ?.filter(item => {
+        if (searchData) {
+          return item.name.toLowerCase().includes(searchData.toLowerCase());
+        } else {
+          return item;
+        }
+      })
+      .sort((a, b) => {
+        const getDate = val => {
+          const d = new Date(val);
+          return d.toISOString();
+        };
+        if (service === 'A-Z') {
+          return a.name > b.name ? 1 : -1;
+        } else if (service === 'Z-A') {
+          return a.name < b.name ? 1 : -1;
+        } else if (service === 'Date') {
+          return getDate(b.created_at) - getDate(a.created_at);
+        }
+      })
+      .map(item => {
+        return vertical ? (
+          <VStack
+            alignItems={'center'}
+            margin={2}
+            space={1}
+            padding={5}
+            rounded={15}
+            borderColor="orange.300"
+            borderWidth={1}
+            style={
+              vertical ? styles.subContainer : styles.subContainerhorizontal
+            }
+            key={item.id}>
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate('ProductDetails', {id: item.id})
+              }>
+              <Image source={{uri: item.thumbnail_url}} style={styles.image} />
+              <Text style={styles.text}>{item.name}</Text>
+            </TouchableOpacity>
+          </VStack>
+        ) : (
+          <VStack
+            alignItems={'center'}
+            margin={2}
+            space={1}
+            padding={5}
+            rounded={15}
+            borderColor="orange.300"
+            borderWidth={1}
+            style={styles.subContainerhorizontal}
+            key={item.id}>
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate('ProductDetails', {id: item.id})
+              }>
+              <Image
+                source={{uri: item.thumbnail_url}}
+                style={styles.imagehorizontal}
+              />
+              <Text style={styles.horizontalText}>{item.name}</Text>
+            </TouchableOpacity>
+          </VStack>
+        );
+      })
   );
 };
 
@@ -121,42 +144,62 @@ const HorizontalView = ({
   );
 };
 const SearchBar = ({setSearchData, searchData, data, service, setFood}) => {
-  const debouncing = func => {
-    let timer;
-    return function (...args) {
-      const context = this;
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => {
-        timer = null;
-        func.apply(context, args);
-      }, 1000);
-    };
-  };
-  const handleChange = val => {
-    const recipee = data?.results
-      ?.filter(item => {
-        if (val) {
-          return item.name.toLowerCase().includes(val.toLowerCase());
-        } else {
-          return item;
-        }
-      })
-      .sort((a, b) => {
-        const getDate = val => {
-          const d = new Date(val);
-          return d.toISOString();
-        };
-        if (service === 'A-Z') {
-          return a.name > b.name ? 1 : -1;
-        } else if (service === 'Z-A') {
-          return a.name < b.name ? 1 : -1;
-        } else if (service === 'Date') {
-          return getDate(b.created_at) - getDate(a.created_at);
-        }
-      });
-    setFood(recipee);
-  };
-  const optimisedVersion = useCallback(debouncing(handleChange), []);
+  // const debouncing = func => {
+  //   let timer;
+  //   return function (...args) {
+  //     const context = this;
+  //     if (timer) clearTimeout(timer);
+  //     timer = setTimeout(() => {
+  //       timer = null;
+  //       func.apply(context, args);
+  //     }, 1000);
+  //   };
+  // };
+  // const handleChange = val => {
+  //   const options = {
+  //     method: 'GET',
+  //     url: 'https://tasty.p.rapidapi.com/recipes/auto-complete',
+  //     params: {prefix: val},
+  //     headers: {
+  //       'X-RapidAPI-Key': '09ce4eedcfmshe255b978d6ff7c8p1713a2jsnbfc53b3741ec',
+  //       'X-RapidAPI-Host': 'tasty.p.rapidapi.com',
+  //     },
+  //   };
+  //   if (val.length > 2) {
+  //     axios
+  //       .request(options)
+  //       .then(function (response) {
+  //         console.log(response.data);
+  //         setFood(response.data);
+  //       })
+  //       .catch(function (error) {
+  //         console.error(error);
+  //       });
+  //   }
+
+  //   const recipee = data?.results
+  //     ?.filter(item => {
+  //       if (val) {
+  //         return item.name.toLowerCase().includes(val.toLowerCase());
+  //       } else {
+  //         return item;
+  //       }
+  //     })
+  //     .sort((a, b) => {
+  //       const getDate = val => {
+  //         const d = new Date(val);
+  //         return d.toISOString();
+  //       };
+  //       if (service === 'A-Z') {
+  //         return a.name > b.name ? 1 : -1;
+  //       } else if (service === 'Z-A') {
+  //         return a.name < b.name ? 1 : -1;
+  //       } else if (service === 'Date') {
+  //         return getDate(b.created_at) - getDate(a.created_at);
+  //       }
+  //     });
+  // };
+  // const optimisedVersion = useCallback(debouncing(handleChange), []);
   return (
     <Input
       mx="3"
@@ -165,7 +208,7 @@ const SearchBar = ({setSearchData, searchData, data, service, setFood}) => {
       w="95%"
       margin={5}
       placeholderTextColor="green.500"
-      onChangeText={val => optimisedVersion(val)}
+      onChangeText={val => setSearchData(val)}
     />
   );
 };
@@ -210,43 +253,42 @@ const Home = ({navigation}) => {
   const [food, setFood] = useState([]);
   useEffect(() => {
     SplashScreen.hide();
-    setFood(() => data);
-  }, [food]);
+  }, []);
   console.log('food in home', food);
   return (
     <SafeAreaView style={styles.SafeAreaView}>
-      {isLoading && <Loading />}
-      {isSuccess && (
-        <View style={styles.container}>
-          <SearchBar
-            setSearchData={setSearchData}
-            setFood={setFood}
-            data={data}
-            service={service}
-          />
-          <HStack
-            alignItems={'center'}
-            justifyContent={'space-between'}
-            width={'100%'}
-            paddingLeft={5}
-            paddingRight={5}
-            paddingBottom={5}>
-            <View style={styles.fonticons}>
-              <TouchableOpacity
-                onPress={() => {
-                  setVertical(true), setHorizontal(false);
-                }}>
-                <FontAwesome5 name="grip-lines" size={25} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => {
-                  setHorizontal(true), setVertical(false);
-                }}>
-                <FontAwesome5 name="th-large" size={25} />
-              </TouchableOpacity>
-            </View>
-            <SelectView setService={setService} service={service} />
-          </HStack>
+      <View style={styles.container}>
+        <SearchBar
+          setSearchData={setSearchData}
+          setFood={setFood}
+          data={data}
+          service={service}
+        />
+        <HStack
+          alignItems={'center'}
+          justifyContent={'space-between'}
+          width={'100%'}
+          paddingLeft={5}
+          paddingRight={5}
+          paddingBottom={5}>
+          <View style={styles.fonticons}>
+            <TouchableOpacity
+              onPress={() => {
+                setVertical(true), setHorizontal(false);
+              }}>
+              <FontAwesome5 name="grip-lines" size={25} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                setHorizontal(true), setVertical(false);
+              }}>
+              <FontAwesome5 name="th-large" size={25} />
+            </TouchableOpacity>
+          </View>
+          <SelectView setService={setService} service={service} />
+        </HStack>
+        {isLoading && <Loading />}
+        {isSuccess && (
           <ScrollView>
             {vertical ? (
               <VerticalView
@@ -273,8 +315,8 @@ const Home = ({navigation}) => {
               </HStack>
             ) : null}
           </ScrollView>
-        </View>
-      )}
+        )}
+      </View>
     </SafeAreaView>
   );
 };
